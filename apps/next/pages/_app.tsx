@@ -18,8 +18,14 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
     <>
       <Head>
         <title>Tamagui • Pages Router</title>
-        <meta name="description" content="Tamagui, Solito, Expo & Next.js" />
-        <link rel="icon" href="/favicon.ico" />
+        <meta
+          name="description"
+          content="Tamagui, Solito, Expo & Next.js"
+        />
+        <link
+          rel="icon"
+          href="/favicon.ico"
+        />
         <style
           dangerouslySetInnerHTML={{
             // the first time this runs you'll get the full CSS including all themes

@@ -1,63 +1,272 @@
 import {
   Anchor,
   Button,
+  Card,
   H1,
   Paragraph,
   Separator,
   Sheet,
   SwitchRouterButton,
   SwitchThemeButton,
+  Text,
   useToastController,
   XStack,
-  YStack
+  YStack,
+  Spinner,
 } from '@my/ui'
-import { ChevronDown, ChevronUp } from '@tamagui/lucide-icons'
-import { useState } from 'react'
-import { Platform } from 'react-native'
-import { useLink } from 'solito/navigation'
+import {
+  ChevronDown,
+  ChevronUp,
+  User,
+  Trophy,
+  DollarSign,
+  Calendar,
+  Settings,
+} from '@tamagui/lucide-icons'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'solito/navigation'
+import { useAuth } from '../../provider/auth/auth-context'
 
 export function HomeScreen({ pagesMode = false }: { pagesMode?: boolean }) {
-  const linkTarget = pagesMode ? '/pages-example-user' : '/user'
-  const linkProps = useLink({
-    href: `${linkTarget}/nate`,
-  })
+  const { user, isAuthenticated, isLoading, logout } = useAuth()
+  const router = useRouter()
+  const toast = useToastController()
 
-  return (
-    <YStack flex={1} justify="center" items="center" gap="$8" p="$4" bg="$background">      
-      <XStack
-        position="absolute"
-        width="100%"
-        t="$6"
-        gap="$6"
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      toast.show('Logged Out', {
+        message: 'You have been logged out successfully',
+        native: true,
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
+  const navigateToProfile = () => {
+    if (user) {
+      const linkTarget = pagesMode ? '/pages-example-user' : '/user'
+      router.push(`${linkTarget}/${user.username}`)
+    }
+  }
+
+  // Show loading spinner during initial auth check
+  if (isLoading) {
+    return (
+      <YStack
+        flex={1}
         justify="center"
-        flexWrap="wrap"
-        $sm={{ position: 'relative', t: 0 }}
+        items="center"
+        bg="$background"
       >
-        {Platform.OS === 'web' && (
-          <>
-            <SwitchRouterButton pagesMode={pagesMode} />
-            <SwitchThemeButton />
-          </>
-        )}
-      </XStack>
-
-      <YStack gap="$4">
-        <H1 text="center" color="$color12">
-          Welcome to Tamagui.
-        </H1>
-        <Paragraph color="$color10" text="center">
-          Here's a basic starter to show navigating from one screen to another.
-        </Paragraph>
-        <Separator />
-        <Paragraph text="center">
-          This screen uses the same code on Next.js and React Native.
-        </Paragraph>
-        <Separator />
+        <Spinner
+          size="large"
+          color="$blue10"
+        />
+        <Text
+          mt="$4"
+          color="$color10"
+        >
+          Loading...
+        </Text>
       </YStack>
+    )
+  }
 
-      <Button {...linkProps}>Link to user</Button>
+  // If not authenticated, show loading while redirecting
+  if (!isAuthenticated) {
+    return (
+      <YStack
+        flex={1}
+        justify="center"
+        items="center"
+        bg="$background"
+      >
+        <Spinner
+          size="large"
+          color="$blue10"
+        />
+        <Text
+          mt="$4"
+          color="$color10"
+        >
+          Redirecting to login...
+        </Text>
+      </YStack>
+    )
+  }
 
-      <SheetDemo />
+  // Show home dashboard for authenticated users
+  return (
+    <YStack
+      flex={1}
+      p="$4"
+      gap="$4"
+      bg="$background"
+    >
+      {/* Header */}
+      <Card
+        padding={20}
+        gap={15}
+      >
+        <YStack
+          direction="row"
+          justify="space-between"
+          items="center"
+        >
+          <YStack>
+            <H1>Welcome back!</H1>
+            {user && (
+              <Text
+                color="$color10"
+                fontSize="$4"
+              >
+                {user.first_name} {user.last_name}
+              </Text>
+            )}
+          </YStack>
+          <Button
+            size="$3"
+            circular
+            icon={Settings}
+            onPress={handleLogout}
+            theme="red"
+          />
+        </YStack>
+      </Card>
+
+      {/* Quick Stats */}
+      {user && (
+        <XStack
+          gap="$4"
+          flexWrap="wrap"
+        >
+          <Card
+            flex={1}
+            minWidth={150}
+            padding={15}
+            gap={10}
+          >
+            <YStack
+              direction="row"
+              items="center"
+              gap="$2"
+            >
+              <Trophy
+                size={20}
+                color="$orange10"
+              />
+              <Text
+                fontSize="$3"
+                color="$color10"
+              >
+                Points
+              </Text>
+            </YStack>
+            <Text
+              fontSize="$6"
+              fontWeight="bold"
+              color="$orange10"
+            >
+              {user.profile.total_points}
+            </Text>
+          </Card>
+
+          <Card
+            flex={1}
+            minWidth={150}
+            padding={15}
+            gap={10}
+          >
+            <YStack
+              direction="row"
+              items="center"
+              gap="$2"
+            >
+              <DollarSign
+                size={20}
+                color="$green10"
+              />
+              <Text
+                fontSize="$3"
+                color="$color10"
+              >
+                Money
+              </Text>
+            </YStack>
+            <Text
+              fontSize="$6"
+              fontWeight="bold"
+              color="$green10"
+            >
+              ${user.profile.total_money.toFixed(2)}
+            </Text>
+          </Card>
+        </XStack>
+      )}
+
+      {/* Quick Actions */}
+      <Card
+        padding={20}
+        gap={15}
+      >
+        <Text
+          fontSize="$5"
+          fontWeight="600"
+        >
+          Quick Actions
+        </Text>
+        <YStack gap="$3">
+          <Button
+            icon={User}
+            onPress={navigateToProfile}
+            justifyContent="flex-start"
+          >
+            View Profile
+          </Button>
+          <Button
+            icon={Calendar}
+            onPress={() => {}}
+            justifyContent="flex-start"
+            disabled
+            opacity={0.5}
+          >
+            View Chores (Coming Soon)
+          </Button>
+          <Button
+            icon={Trophy}
+            onPress={() => {}}
+            justifyContent="flex-start"
+            disabled
+            opacity={0.5}
+          >
+            Browse Rewards (Coming Soon)
+          </Button>
+        </YStack>
+      </Card>
+
+      {/* Demo Sheet */}
+      <Card
+        padding={20}
+        gap={15}
+        items="center"
+      >
+        <Text
+          fontSize="$4"
+          fontWeight="600"
+        >
+          Demo Features
+        </Text>
+        <SheetDemo />
+      </Card>
     </YStack>
   )
 }
@@ -93,10 +302,19 @@ function SheetDemo() {
           exitStyle={{ opacity: 0 }}
         />
         <Sheet.Handle bg="$color8" />
-        <Sheet.Frame items="center" justify="center" gap="$10" bg="$color2">
+        <Sheet.Frame
+          items="center"
+          justify="center"
+          gap="$10"
+          bg="$color2"
+        >
           <XStack gap="$2">
             <Paragraph text="center">Made by</Paragraph>
-            <Anchor color="$blue10" href="https://twitter.com/natebirdman" target="_blank">
+            <Anchor
+              color="$blue10"
+              href="https://twitter.com/natebirdman"
+              target="_blank"
+            >
               @natebirdman,
             </Anchor>
             <Anchor
